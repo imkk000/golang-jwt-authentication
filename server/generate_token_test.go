@@ -15,7 +15,7 @@ func Test_GenerateJWT_Should_Be_JWT_Message(t *testing.T) {
 		Username: "debugging",
 	}
 
-	actualJWTMessage := GenerateJWT(inputTime, inputData)
+	actualJWTMessage, _ := GenerateJWT(inputTime, inputData)
 
 	if expectedJWTMessage != actualJWTMessage {
 		t.Errorf("expect\n%s\nbut it got\n%s", expectedJWTMessage, actualJWTMessage)

@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"hash"
 	"net/http"
 	"strconv"
 	"time"
@@ -24,50 +25,57 @@ type jwtPayload struct {
 	CreatedUnixTime string      `json:"iat"`
 }
 
-func hmac256(src string, secret string) []byte {
+func hmacAlgorithm(src string, hashFunction func() hash.Hash, secret string) []byte {
 	key := []byte(secret)
-	hmacKey := hmac.New(sha256.New, key)
+	hmacKey := hmac.New(hashFunction, key)
 	hmacKey.Write([]byte(src))
 	return hmacKey.Sum(nil)
 }
 
-func GenerateJWT(requestedTime time.Time, data interface{}) string {
+func GenerateJWT(requestedTime time.Time, data interface{}) (string, error) {
 	header := jwtHeader{
 		AuthenticationType: "JWT",
 		Algorithm:          "HS256",
 	}
-	JSONHeader, _ := json.Marshal(header)
+	JSONHeader, err := json.Marshal(header)
+	if err != nil {
+		return "", err
+	}
 	encodedHeader := base64.StdEncoding.EncodeToString(JSONHeader)
 	payload := jwtPayload{
 		ReferenceUserID: strconv.FormatInt(requestedTime.Unix(), 10),
 		Data:            data,
 		CreatedUnixTime: strconv.FormatInt(requestedTime.Unix(), 10),
 	}
-	JSONPayload, _ := json.Marshal(payload)
+	JSONPayload, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
 	encodedPayload := base64.StdEncoding.EncodeToString(JSONPayload)
 
-	src := fmt.Sprintf("%s.%s", encodedHeader, encodedPayload)
-	signature := hmac256(src, secret)
+	signatureData := fmt.Sprintf("%s.%s", encodedHeader, encodedPayload)
+	signature := hmacAlgorithm(signatureData, sha256.New, secret)
 	encodedSignature := base64.StdEncoding.EncodeToString(signature)
-	jwtMessage := fmt.Sprintf("%s.%s", src, encodedSignature)
-	return jwtMessage
+	jwtMessage := fmt.Sprintf("%s.%s", signatureData, encodedSignature)
+	return jwtMessage, nil
 }
 
 type apiHandler struct{}
 
 func (apiHandler apiHandler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Request) {
-	requestedTime := time.Now()
 	data := struct {
 		Username string `json:"username"`
 	}{
 		Username: "debugging",
 	}
+	requestedTime := time.Now()
+	token, _ := GenerateJWT(requestedTime, data)
 	responseBody := struct {
 		RequestedTime string `json:"requested_time"`
 		Token         string `json:"token"`
 	}{
 		RequestedTime: requestedTime.Format(time.RFC3339Nano),
-		Token:         GenerateJWT(requestedTime, data),
+		Token:         token,
 	}
 	responseJSONBody, _ := json.Marshal(responseBody)
 
