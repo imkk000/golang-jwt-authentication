@@ -1,1 +1,1 @@
-module jwt-authentication
+module jwt

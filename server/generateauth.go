@@ -31,7 +31,7 @@ func hmac256(src string, secret string) []byte {
 	return hmacKey.Sum(nil)
 }
 
-func GenerateJWT(data interface{}) []byte {
+func GenerateJWT(requestedTime time.Time, data interface{}) string {
 	header := jwtHeader{
 		AuthenticationType: "JWT",
 		Algorithm:          "HS256",
@@ -39,9 +39,9 @@ func GenerateJWT(data interface{}) []byte {
 	JSONHeader, _ := json.Marshal(header)
 	encodedHeader := base64.StdEncoding.EncodeToString(JSONHeader)
 	payload := jwtPayload{
-		ReferenceUserID: strconv.FormatInt(time.Now().Unix(), 10),
+		ReferenceUserID: strconv.FormatInt(requestedTime.Unix(), 10),
 		Data:            data,
-		CreatedUnixTime: strconv.FormatInt(time.Now().Unix(), 10),
+		CreatedUnixTime: strconv.FormatInt(requestedTime.Unix(), 10),
 	}
 	JSONPayload, _ := json.Marshal(payload)
 	encodedPayload := base64.StdEncoding.EncodeToString(JSONPayload)
@@ -50,20 +50,29 @@ func GenerateJWT(data interface{}) []byte {
 	signature := hmac256(src, secret)
 	encodedSignature := base64.StdEncoding.EncodeToString(signature)
 	jwtMessage := fmt.Sprintf("%s.%s", src, encodedSignature)
-	return []byte(jwtMessage)
+	return jwtMessage
 }
 
 type apiHandler struct{}
 
 func (apiHandler apiHandler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Request) {
+	requestedTime := time.Now()
 	data := struct {
 		Username string `json:"username"`
 	}{
 		Username: "debugging",
 	}
+	responseBody := struct {
+		RequestedTime string `json:"requested_time"`
+		Token         string `json:"token"`
+	}{
+		RequestedTime: requestedTime.Format(time.RFC3339Nano),
+		Token:         GenerateJWT(requestedTime, data),
+	}
+	responseJSONBody, _ := json.Marshal(responseBody)
 
-	responseWriter.WriteHeader(http.StatusOK)
-	responseWriter.Write(GenerateJWT(data))
+	responseWriter.Header().Set("Content-Type", "application/json")
+	responseWriter.Write(responseJSONBody)
 }
 
 func main() {
