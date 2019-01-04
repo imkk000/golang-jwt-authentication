@@ -1,6 +1,7 @@
 package main
 
 import (
+	auth "jwt/api_service/authorization"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -27,7 +28,7 @@ func middlewareHandlerFunc(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// check authorized
-		if Authorized(token) != nil {
+		if auth.Authorized(token) != nil {
 			responseWriter.WriteHeader(http.StatusUnauthorized)
 			return
 		}

@@ -1,7 +1,7 @@
-package main_test
+package authorized_test
 
 import (
-	. "jwt/api_service"
+	. "jwt/api_service/authorization"
 	"testing"
 )
 
