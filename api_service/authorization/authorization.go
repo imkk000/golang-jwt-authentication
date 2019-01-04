@@ -41,7 +41,6 @@ func Authorized(token string) error {
 
 	// find user
 	payload, _ := base64.StdEncoding.DecodeString(tempSplitToken[1])
-	fmt.Println(string(payload))
 	if !strings.Contains(string(payload), fmt.Sprintf(`{"username":"%s"}`, username)) {
 		return errors.New("Username not found in database")
 	}

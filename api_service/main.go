@@ -14,22 +14,29 @@ func handlerFunc(responseWriter http.ResponseWriter, request *http.Request) {
 
 func middlewareHandlerFunc(next http.HandlerFunc) http.HandlerFunc {
 	return func(responseWriter http.ResponseWriter, request *http.Request) {
-		token := request.Header.Get("Authorization")
 		// check exists token in header
+		token := request.Header.Get("Authorization")
 		if len(token) == 0 {
 			responseWriter.WriteHeader(http.StatusUnauthorized)
+			responseWriter.Write([]byte("error"))
 			return
 		}
+
 		// check token prefix follow below url
 		// http://www.iana.org/assignments/http-authschemes/http-authschemes.xhtml
-		if !strings.HasPrefix(token, "Bearer") {
+		if !strings.HasPrefix(token, "Bearer ") {
 			responseWriter.WriteHeader(http.StatusUnauthorized)
+			responseWriter.Write([]byte("error"))
 			return
 		}
+
+		// remove prefix: Bearer
+		token = strings.TrimPrefix(token, "Bearer ")
 
 		// check authorized
 		if auth.Authorized(token) != nil {
 			responseWriter.WriteHeader(http.StatusUnauthorized)
+			responseWriter.Write([]byte("error"))
 			return
 		}
 
