@@ -1,7 +1,7 @@
 package main_test
 
 import (
-	. "jwt/server"
+	. "jwt/generate_token"
 	"testing"
 	"time"
 )

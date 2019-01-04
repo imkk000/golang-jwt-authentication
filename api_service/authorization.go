@@ -21,11 +21,11 @@ func hmacAlgorithm(src string, hashFunction func() hash.Hash, secret string) []b
 }
 
 // TODO: ยังไม่ได้เช็คว่า token timeout หรือยัง?
-func Authorized(token string) (bool, error) {
+func Authorized(token string) error {
 	// check token format
 	tempSplitToken := strings.Split(token, ".")
 	if len(tempSplitToken) != 3 {
-		return false, errors.New("Invalid token format")
+		return errors.New("Invalid token format")
 	}
 
 	// check make new signature equal request signature
@@ -36,16 +36,16 @@ func Authorized(token string) (bool, error) {
 	newSignature := hmacAlgorithm(signatureData, sha256.New, secret)
 	requestSignature, _ := base64.StdEncoding.DecodeString(tempSplitToken[2])
 	if !hmac.Equal(requestSignature, newSignature) {
-		return false, errors.New("Signature not match")
+		return errors.New("Signature not match")
 	}
 
 	// find user
 	payload, _ := base64.StdEncoding.DecodeString(tempSplitToken[1])
 	fmt.Println(string(payload))
 	if !strings.Contains(string(payload), fmt.Sprintf(`{"username":"%s"}`, username)) {
-		return false, errors.New("Username not found in database")
+		return errors.New("Username not found in database")
 	}
 
-	// if ok return true with no error - authorized ok
-	return true, nil
+	// if ok return no error - authorized ok
+	return nil
 }

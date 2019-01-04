@@ -26,6 +26,12 @@ func middlewareHandlerFunc(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		// check authorized
+		if Authorized(token) != nil {
+			responseWriter.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
 		dumpRequest, _ := httputil.DumpRequest(request, true)
 		log.Println(string(dumpRequest))
 		next.ServeHTTP(responseWriter, request)
